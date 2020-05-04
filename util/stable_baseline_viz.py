@@ -35,7 +35,8 @@ def show_videos(video_path='', prefix=''):
 # stable_baselines VecVideoRecorder wrapper
 def record_video(model, env_id=None, eval_env=None,
                  max_video_length=500, video_prefix='',
-                 video_folder='videos/', break_early=False):
+                 video_folder='videos/', break_early=False,
+                 is_recurrent=False):
     """
     :param env_id: (str)
     :param model: (RL model)
@@ -54,13 +55,26 @@ def record_video(model, env_id=None, eval_env=None,
                                 video_length=max_video_length,
                                 name_prefix=video_prefix)
 
+    # according to docs, recurrent policies must have "state" set like this
+    if is_recurrent:
+        state = None
+
     obs = eval_env.reset()
+
     for _ in range(max_video_length):
-        action, _ = model.predict(obs)
+        action, state = model.predict(obs, state=state)
+
+        # only allow recurrent models to continually update their state
+        if not is_recurrent:
+            state = None
+
         obs, _, done, _ = eval_env.step(action)
 
-        if done and break_early:
-            break
+        # if len(done) > 1:
+        #     if done.all() and break_early:
+        #         break
+        # if done and break_early:
+        #     break
 
     # Close the video recorder
     eval_env.close()
