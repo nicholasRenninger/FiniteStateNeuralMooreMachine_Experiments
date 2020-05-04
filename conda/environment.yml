@@ -1,7 +1,0 @@
-name: GAIL-Formal_Methods
-channels:
-  - defaults
-dependencies:
-  - python=3.7
-prefix: /home/nick/anaconda3/envs/GAIL-Formal_Methods
-
