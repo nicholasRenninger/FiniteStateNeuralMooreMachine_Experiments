@@ -135,7 +135,7 @@ CONTAINER_VERSION="latest"
 CONTAINER_ID="${CONTAINER_TAG}:${CONTAINER_VERSION}"
 
 # name the running container for better visibility
-CONTAINER_NAME="RL_BOX"
+CONTAINER_NAME="RNN_RL_BOX"
 
 # done so we don't run shit as root :). DONT CHANGE THIS, the user is set in
 # the dockerfile as well.
@@ -143,7 +143,7 @@ CONTAINER_USER="ferg"
 
 # this is where the experiments will be run in the
 # container image
-CODE_LOC="/home/$CONTAINER_USER/GAIL-Formal_Methods"
+CODE_LOC="/home/$CONTAINER_USER/FiniteStateNeuralMooreMachine_Experiments"
 
 # give the hostname for a nice touch when using the box interactively
 CONTAINER_HOSTNAME="licious"

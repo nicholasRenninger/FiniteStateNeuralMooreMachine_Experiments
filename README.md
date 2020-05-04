@@ -1,14 +1,14 @@
-# FiniteStateNeuralMooreMachine_Experiments
+# NeuralMooreMachine_Experiments
 A project experimenting with Extracting Moore Machines from Recurrent Sequence Models, based heavily on reproducing and extending the experiments in the paper ["Learning Finite State Representations of Recurrent Policy Networks"](https://arxiv.org/abs/1811.12530) ([repo](https://github.com/koulanurag/mmn)).
 
 Currently, the container-based environment has been tested to work on both Ubuntu (GPU / CPU) and macOS (CPU-only) hosts. For GPU support, onle
 
 **Table of Contents**
-* [About](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#about)
+* [About](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#about)
 * Results
-* [Methodology](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#methodology)
-* [Container Usage](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#container-usage)
-* [Installation](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#installation)
+* [Methodology](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#methodology)
+* [Container Usage](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#container-usage)
+* [Installation](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#installation)
 
 
 ## About
@@ -31,8 +31,6 @@ Here is a high-level overview of the steps taken in the learning of moore machin
 1. Learn an feature_extractor-rnn_policy for a RL environment using a standard RL algorithm capable of learning with a recurrent policy (e.g. [ACKTR](https://openai.com/blog/baselines-acktr-a2c/) or [PPO2](https://openai.com/blog/openai-baselines-ppo/)). Here the feature extraction network is known as `F_ExtractNet` and the RNN policy that takes these features and produces the next action is known as `RNN_Policy`. *If your environment already has simple, discrete observations, you will not need `F_ExtractNet` and can directly feed the observation into the `RNN_Policy`.*
 
 2. Generate "Bottleneck Data". This is where you simulate many trajectories in the RL environment, recording the observations and the actions taken by the `RNN_Policy`. This is for training the "quantized bottleneck neural networks" (`QBNs`) next.
-
-    1. 
 
 3. Learn `QBNs`, which are essentially applied autoencoders (AE), to quantize (discretize):
 
@@ -174,8 +172,8 @@ Follow the *nix [docker post-installation guide](https://docs.docker.com/engine/
 
 Now that you have docker configured, you can need to clone this repo. Pick your favorite directory on your computer (mine is `/$HOME/Downloads` ofc) and run:
  ```bash
-git clone --recurse-submodules https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments
-cd FiniteStateNeuralMooreMachine_Experiments
+git clone --recurse-submodules https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments
+cd NeuralMooreMachine_Experiments
  ```
  
  The container builder uses `make`:
