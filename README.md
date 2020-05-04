@@ -30,9 +30,11 @@ Here is a high-level overview of the steps taken in the learning of moore machin
 
 1. Learn an feature_extractor-rnn_policy for a RL environment using a standard RL algorithm capable of learning with a recurrent policy (e.g. [ACKTR](https://openai.com/blog/baselines-acktr-a2c/) or [PPO2](https://openai.com/blog/openai-baselines-ppo/)). Here the feature extraction network is known as `F_ExtractNet` and the RNN policy that takes these features and produces the next action is known as `RNN_Policy`. *If your environment already has simple, discrete observations, you will not need `F_ExtractNet` and can directly feed the observation into the `RNN_Policy`.*
 
-2. Generate "Bottleneck Data". This is where you simulate many trajectories in the RL environment, recording the observations and the actions taken by the `RNN_Policy`. This is for training the quantization networks later.
+2. Generate "Bottleneck Data". This is where you simulate many trajectories in the RL environment, recording the observations and the actions taken by the `RNN_Policy`. This is for training the "quantized bottleneck neural networks" (`QBNs`) next.
 
-3. Learn "quantized bottleneck neural networks" (QBNs), which are essentially applied autoencoders (AE), to quantize (discretize):
+    1. 
+
+3. Learn `QBNs`, which are essentially applied autoencoders (AE), to quantize (discretize):
 
     * the observations of the environmental feature extractor:
         * CNN if using an agent that observes video of the environment. 
@@ -40,6 +42,8 @@ Here is a high-level overview of the steps taken in the learning of moore machin
     This is called `b_f` in the paper and `OX` in the mnn code.
     
     * the hidden state of the `RNN_Policy`. This is called `b_h` in the paper and `BHX` in the mnn code
+
+This is done by 
 
 4. Insert the trained `OX` QBN *before* the feature extractor and the trained `BHX` QBN *after* the RNN unit in the feature_extractor-rnn_policy network to create what is now called the moore machine network (`MMN`) policy.
 
@@ -67,7 +71,7 @@ Here is a high-level overview of the steps taken in the learning of moore machin
 
 7. Minimize the extracted moore machine to get the smallest possible model. "In general, the number of states `p` will be larger than necessary in the sense that there is a much smaller, but equivalent, minimal machine". Thus, use age old moore machine minimization techniques to learn the moore machine. **This process is exactly the process in Grammatical Inference, thus we can use my own [wombats](https://github.com/nicholasRenninger/wombats/tree/master) tool.**
 
-8. You're done. You now have a moore machine that operated on the abstract, quantized data obtained from the QBNs. To use the moore machine in an environment:
+8. You're done. You now have a moore machine that operated on the abstract, quantized data obtained from the `QBNs`. To use the moore machine in an environment:
 
     1. Start by using `OX` and the feature extractor to take the initial environmental observation `f_{env, 0}` and get the moore machine feature observation `o_{MM, 0} = OX.encode(F_ExtractNet(f_{env, 0}))`.
 
