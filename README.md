@@ -28,7 +28,7 @@ Not yet :(
 
 Here is a high-level overview of the steps taken in the learning of moore machine network (MMN) controller:
 
-1. Learn an feature_extractor-rnn_policy for a RL environment using a standard RL algorithm capable of learning with a recurrent policy (e.g. A3C or PPO2). Here the feature extraction network is known as `F_ExtractNet` and the RNN policy that takes these features and produces the next action is known as `RNN_Policy`. *If your environment already has simple, discrete observations, you will not need `F_ExtractNet` and can directly feed the observation into the `RNN_Policy`.*
+1. Learn an feature_extractor-rnn_policy for a RL environment using a standard RL algorithm capable of learning with a recurrent policy (e.g. [ACKTR](https://openai.com/blog/baselines-acktr-a2c/) or [PPO2](https://openai.com/blog/openai-baselines-ppo/)). Here the feature extraction network is known as `F_ExtractNet` and the RNN policy that takes these features and produces the next action is known as `RNN_Policy`. *If your environment already has simple, discrete observations, you will not need `F_ExtractNet` and can directly feed the observation into the `RNN_Policy`.*
 
 2. Generate "Bottleneck Data". This is where you simulate many trajectories in the RL environment, recording the observations and the actions taken by the `RNN_Policy`. This is for training the quantization networks later.
 
