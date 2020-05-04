@@ -1,85 +1,84 @@
-# GAIL-Formal_Methods
-A project experimenting with Generative Adversarial Imitation Learning and Formal Methods. 
+# FiniteStateNeuralMooreMachine_Experiments
+A project experimenting with Extracting Moore Machines from Recurrent Sequence Models, based heavily on reproducing and extending the experiments in the paper ["Learning Finite State Representations of Recurrent Policy Networks"](https://arxiv.org/abs/1811.12530) ([repo](https://github.com/koulanurag/mmn)).
 
-Currently, the container-based environment has been tested to work on both Ubuntu (GPU / CPU) and macOS (CPU-only) hosts.
+Currently, the container-based environment has been tested to work on both Ubuntu (GPU / CPU) and macOS (CPU-only) hosts. For GPU support, onle
 
 **Table of Contents**
-* [About](https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/README.md#about)
-* [Results](https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/README.md#results)
-* [Methodology](https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/README.md#methodology)
-* [Container Usage](https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/README.md#container-usage)
-* [Installation](https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/README.md#installation)
+* [About](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#about)
+* Results
+* [Methodology](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#methodology)
+* [Container Usage](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#container-usage)
+* [Installation](https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments/blob/master/README.md#installation)
 
 
 ## About
 
-This repo contains the docker container and python code to fully experiment with [GAIL](https://stable-baselines.readthedocs.io/en/master/modules/gail.html). The whole experiment is contained in `GAIL_testing.ipynb`.
+This repo contains the docker container and python code to fully experiment with [mnn](https://github.com/koulanurag/mmn). The whole experiment is contained in `MNN_testing.ipynb`.
 
-This project is based on [stable-baselines](https://stable-baselines.readthedocs.io/), [OpenAI Gym](https://github.com/openai/gym), [MiniGym](https://github.com/maximecb/gym-minigrid), [tensorflow](https://www.tensorflow.org/), [PRISM](https://www.prismmodelchecker.org/), and [wombats](https://github.com/nicholasRenninger/wombats)
-
-*I will likely be changing to the [imitation](https://github.com/HumanCompatibleAI/imitation) library instead of stable-baselines for the GAIL implementation, as stable-baselines has decided to drop support for GAIL and also imitation has a PPO-based GAIL learned (definitely better than the older TRPO GAIL learner in stable-baselines).*
+This project is based on [stable-baselines](https://stable-baselines.readthedocs.io/), [OpenAI Gym](https://github.com/openai/gym), [MiniGym](https://github.com/maximecb/gym-minigrid), [tensorflow](https://www.tensorflow.org/), and [wombats](https://github.com/nicholasRenninger/wombats)
 
 
 
 ## Results
 
-Here are some of the results from the GAIL experiments. Right now, I have a small bug somewhere in the training of GAIL, so it does not work - I've been trying to fix GAIL for weeks now. On the bright side, I think I just accidentally created an extremely powerful, general-purpose reinforcement learning algorithm to become the mathematically optimal game troll.
-
-
-### Final Policies
-
-Here are videos of the agents one of the DeepMind AI Safety environments. Here, the agent must get to the green goal while always avoiding the lava. 
-
-**Expert Policy**
-
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/ppo2_expert.gif">
-
-**Imitation Learner Policy**
-
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/learner.gif">
-
----
-
-### Expert Demonstrator Training
-
-To get an expert demonstrator for this environment, I used the [stable-baselines PPO2 implementation](https://stable-baselines.readthedocs.io/en/master/modules/ppo2.html). See the jupyter notebook for hyperparameters.
-
-**Expert Episodic Reward**
-
-*The final PPO2 training episodic, non-discounted reward as a function of training step.*
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/expert_reward.png">
-
-**Expert Entropy Loss**
-
-*The final PPO2 entropy loss as a function of training step.*
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/expert_loss.png">
-
----
-
-### Imitation Learner Training
-
-To train an imitation learner for this environment, I used the [stable-baselines GAIL implementation](https://stable-baselines.readthedocs.io/en/master/modules/gail.html). See the jupyter notebook for hyperparameters.
-
-**Learner Episodic Reward**
-
-*The final GAIL training episodic, non-discounted reward as a function of training step.*
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/gail_episode_reward.png">
-
-**Learner Discriminator Classification Loss**
-
-*The final GAIL discriminator classification loss as a function of training step.*
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/gail_discriminator_loss.png">
-
-**Learner Internal Adversarial Reward**
-
-*The final GAIL policy network discounted ”reward” signal from the descriminator as a function of training step.*
-<img src="https://github.com/nicholasRenninger/GAIL-Formal_Methods/blob/master/results/gail_policy_net_reward_signal.png">
+Not yet :(
 
 
 ## Methodology
 
-Basically, you first train an expert agent using RL (in this case with PPO2), collect sampled trajectories from the trained expert, and then train the imitation learner (in this case with GAIL) using those state-action pairs. GAIL has access to the environment as a dynamics model, but not the reward signal. It must train a robust policy using only the expert demonstrations as the specification of the task.
+Here is a high-level overview of the steps taken in the learning of moore machine network (MMN) controller:
 
+1. Learn an feature_extractor-rnn_policy for a RL environment using a standard RL algorithm capable of learning with a recurrent policy (e.g. A3C or PPO2). Here the feature extraction network is known as `F_ExtractNet` and the RNN policy that takes these features and produces the next action is known as `RNN_Policy`. *If your environment already has simple, discrete observations, you will not need `F_ExtractNet` and can directly feed the observation into the `RNN_Policy`.*
+
+2. Generate "Bottleneck Data". This is where you simulate many trajectories in the RL environment, recording the observations and the actions taken by the `RNN_Policy`. This is for training the quantization networks later.
+
+3. Learn "quantized bottleneck neural networks" (QBNs), which are essentially applied autoencoders (AE), to quantize (discretize):
+
+    * the observations of the environmental feature extractor:
+        * CNN if using an agent that observes video of the environment. 
+        * MLP if getting non-image state observations
+    This is called `b_f` in the paper and `OX` in the mnn code.
+    
+    * the hidden state of the `RNN_Policy`. This is called `b_h` in the paper and `BHX` in the mnn code
+
+4. Insert the trained `OX` QBN *before* the feature extractor and the trained `BHX` QBN *after* the RNN unit in the feature_extractor-rnn_policy network to create what is now called the moore machine network (`MMN`) policy.
+
+5. Fine-tune the `MMN` policy by re-running the rl algorithm using the `MMN` policy as a starting point for RL interactions. *Importantly, for training stability the `MMN` is fine-tuned to match the softmax action distribution of the original `RNN_Policy`, not the argmax -> optimize with a categorical cross-entropy loss between the RNN and `MMN` output softmax layers*. 
+
+6. Extract a classical moore machine from the `MMN` policy by doing:
+
+    1. Generate trajectories in the RL environment using rollout simulations of `MMN` policy. For each rollout simulation timestep, we extract a tuple `(h_{MMN, t-1}, f_{MMN, t}, h_{MMN, t}, a_{MMN, t})`:
+        * `h_{MMN, t-1}`: the quantized hidden state of the RNN QBN at the previous timestep
+        * `f_{MMN, t}`: the quantized observation state of the feature extractor QBN at the current timestep.
+        * `h_{MMN, t}`: the quantized hidden state of the RNN QBN at the current timestep.
+        * `a_{MMN, t}`: the action outputted by the MNN policy at the current timestep.
+    
+    2. As you can see, we now have *most* of the elements needed to form a Moore machine:
+        * `h_{MMN, t-1}` -> prior state of the moore machine, `h_{MM, t-1}`
+        * `f_{MMN, t}` -> input transition label of the transition from moore machine state `h_{MM, t-1}` to moore machine state `h_{MM, t}`, `o{MM, t}`.
+        * `h_{MMN, t}` -> current state of the moore machine, `h_{MM, t}`.
+        * `a_{MMN, t}` -> output label of the current moore machine state `h_{MM, t}`, `a_{MM, t}`.
+    
+    3. What we are missing is a transition function `delta()` and an initial state of the moore machine, `h_{MM, 0}`. 
+     
+        * `delta()`: A moore machine needs a transition function `delta(h_{MM, t - 1}, o_{MM, t}) -> h_{MM, t}` that maps the current state and observed feature to the next state. Here we will end up with a set of trajectories containing `p` distinct quantized states (`h_{MM}`) and `q` distinct quantized features (`o_{MM}`). These trajectories are then converted to a transition table representing `delta`, which maps any observation-state tuple `(h_{MM}, o_{MM})` to a new state `h_{MM}'`.
+
+        * `h_{MM, 0}`: In practice, this is done by encoding the start state of `RNN_Policy` using `BHX`: `h_{MM, 0} = BHX(h_{`MMN`, 0}`.
+
+7. Minimize the extracted moore machine to get the smallest possible model. "In general, the number of states `p` will be larger than necessary in the sense that there is a much smaller, but equivalent, minimal machine". Thus, use age old moore machine minimization techniques to learn the moore machine. **This process is exactly the process in Grammatical Inference, thus we can use my own [wombats](https://github.com/nicholasRenninger/wombats/tree/master) tool.**
+
+8. You're done. You now have a moore machine that operated on the abstract, quantized data obtained from the QBNs. To use the moore machine in an environment:
+
+    1. Start by using `OX` and the feature extractor to take the initial environmental observation `f_{env, 0}` and get the moore machine feature observation `o_{MM, 0} = OX.encode(F_ExtractNet(f_{env, 0}))`.
+
+    2. Use `delta` with `o_{MM, 0}` and `h_{MM, 0}` (part of the definition of the moore machine) to get the action, `delta(o_{MM, 0}, h_{MM, 0}) = a_{MM, 0}`.
+
+    3. Take a step in the environment using `step(env, a_{MM, 0)` to produce a new observation `f_{env, 1}` and the environmental reward, `r_t`.
+    
+    4.  As in step 1-3, we do for `t = 1` onwards:
+        1.  `o_{MM, t} = OX.encode(F_ExtractNet(f_{env, t}))`
+        2.  `a_{MM, t} = delta(o_{MM, t}, h_{MM, t})`
+        3.  `f_{env, t+1}, r_t = step(env, a_{MM, t})`
 
 
 ## Container Usage
@@ -171,8 +170,8 @@ Follow the *nix [docker post-installation guide](https://docs.docker.com/engine/
 
 Now that you have docker configured, you can need to clone this repo. Pick your favorite directory on your computer (mine is `/$HOME/Downloads` ofc) and run:
  ```bash
-git clone --recurse-submodules https://github.com/nicholasRenninger/GAIL-Formal_Methods
-cd GAIL-Formal_Methods
+git clone --recurse-submodules https://github.com/nicholasRenninger/FiniteStateNeuralMooreMachine_Experiments
+cd FiniteStateNeuralMooreMachine_Experiments
  ```
  
  The container builder uses `make`:

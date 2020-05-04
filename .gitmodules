@@ -7,3 +7,6 @@
 [submodule "stable-baselines"]
 	path = stable-baselines
 	url = https://github.com/hill-a/stable-baselines.git
+[submodule "CSCI_5922_Final_Project_Report"]
+	path = CSCI_5922_Final_Project_Report
+	url = https://github.com/nicholasRenninger/CSCI_5922_Final_Project_Report.git
