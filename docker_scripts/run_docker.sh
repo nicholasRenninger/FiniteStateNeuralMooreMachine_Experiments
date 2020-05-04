@@ -59,6 +59,9 @@ fi
 ##   Deciding whether to run CPU or GPU image based on command-line flag   ##
 #############################################################################
 
+BASE_CONTAINER_TAG="nerual_moore_machines"
+CPU_ONLY_TAG_ADD_ON="-cpu"
+
 # use -d or --device to specify whether to use a CPU or GPU docker image
 # allowed arguments:
 #   - cpu
@@ -93,7 +96,7 @@ cmd_line_args=$1
 if [ "$DEVICE" = "gpu" ] || [ "$DEVICE" = "GPU" ]; then
 
   echo "Executing in the docker (gpu image):"
-  CONTAINER_TAG="gail_formal_methods"
+  CONTAINER_TAG=$BASE_CONTAINER_TAG
 
   # need to add in an argument to the container runner enabling GPU hardware
   # ONLY when using the GPU container image
@@ -102,7 +105,7 @@ if [ "$DEVICE" = "gpu" ] || [ "$DEVICE" = "GPU" ]; then
 elif [ "$DEVICE" = "cpu" ] || [ "$DEVICE" = "CPU" ]; then
 
   echo "Executing in the docker (cpu image):"
-  CONTAINER_TAG="gail_formal_methods-cpu"
+  CONTAINER_TAG="$BASE_CONTAINER_TAG$CPU_ONLY_TAG_ADD_ON"
 
 elif [ -z "$DEVICE" ]; then
 
@@ -138,12 +141,12 @@ CONTAINER_ID="${CONTAINER_TAG}:${CONTAINER_VERSION}"
 CONTAINER_NAME="RNN_RL_BOX"
 
 # done so we don't run shit as root :). DONT CHANGE THIS, the user is set in
-# the dockerfile as well.
+# the build_docker.sh script as well.
 CONTAINER_USER="ferg"
 
 # this is where the experiments will be run in the
 # container image
-CODE_LOC="/home/$CONTAINER_USER/FiniteStateNeuralMooreMachine_Experiments"
+CODE_LOC="/home/$CONTAINER_USER/NeuralMooreMachine_Experiments"
 
 # give the hostname for a nice touch when using the box interactively
 CONTAINER_HOSTNAME="licious"

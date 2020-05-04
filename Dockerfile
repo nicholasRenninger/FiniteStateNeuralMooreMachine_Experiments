@@ -4,9 +4,12 @@
 
 ARG PARENT_IMAGE
 FROM $PARENT_IMAGE
+
 ARG USE_GPU
 ARG HOST_USER_ID
 ARG HOST_GROUP_ID
+ARG USER_NAME
+ARG CODE_DIR
 
 RUN apt-get -y update
 RUN apt-get -y install \
@@ -49,14 +52,14 @@ RUN rm -rf /var/lib/apt/lists/*
 # 
 # Source:
 # https://jtreminio.com/blog/running-docker-containers-as-current-host-user/
-ENV USR "ferg"
+ENV USR $USER_NAME
 RUN groupadd -og $HOST_GROUP_ID appuser && \
     useradd -r -u $HOST_USER_ID -g appuser $USR
 
 # these configure where the working dir will be, and where the startup script
 # is
 ENV USR_HOME /home/$USR
-ENV CODE_DIR $USR_HOME/GAIL-Formal_Methods
+ENV CODE_DIR $USR_HOME/$CODE_DIR
 
 ENV CMD_DIR docker_scripts
 ENV CMD_SCRIPT docker-entrypoint.sh
