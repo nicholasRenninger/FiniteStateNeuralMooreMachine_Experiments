@@ -1,5 +1,6 @@
 import os
 import base64
+import copy
 from pathlib import Path
 
 from IPython import display as ipythondisplay
@@ -33,7 +34,7 @@ def show_videos(video_path='', prefix=''):
 
 # We will record a video using the
 # stable_baselines VecVideoRecorder wrapper
-def record_video(model, num_training_envs, env_id=None, eval_env=None,
+def record_video(model, env_id=None, eval_env=None,
                  max_video_length=500, video_prefix='',
                  video_folder='videos/', break_early=False,
                  is_recurrent=False):
@@ -60,7 +61,8 @@ def record_video(model, num_training_envs, env_id=None, eval_env=None,
         state = None
 
     # When using VecEnv, done is a vector
-    doneVec = [False for _ in range(num_training_envs)]
+    is_single_env = (eval_env.num_envs == 1)
+    doneVec = [False for _ in range(model.n_envs)]
 
     obs = eval_env.reset()
 
@@ -76,7 +78,10 @@ def record_video(model, num_training_envs, env_id=None, eval_env=None,
 
         obs, _, done, _ = eval_env.step(action)
 
-        doneVec[0] = done
+        if is_single_env:
+            doneVec[0] = copy.deepcopy(done[0])
+        else:
+            doneVec = copy.deepcopy(done)
 
     # Close the video recorder
     eval_env.close()
