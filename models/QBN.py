@@ -15,15 +15,18 @@ class QBN(object):
 
     def __init__(self, size_of_layers, transfer_function=tf.nn.softplus,
                  optimizer=tf.train.AdamOptimizer(),
+                 loss_func=tf.compat.v1.losses.mean_squared_error,
                  log_dir='logs'):
 
         self.size_of_layers = size_of_layers
         self.transfer = transfer_function
+        self.input_dim = self.size_of_layers[0]
 
         network_weights = self._initialize_weights()
         self.weights = network_weights
 
-        self.x = tf.placeholder(tf.float32, [None, self.size_of_layers[0]])
+        self.x = tf.placeholder(tf.float32, [None, self.input_dim])
+        self.x_test = tf.placeholder(tf.float32, [None, self.input_dim])
 
         # use x as the variable we encode and then decode with the
         # encoder / decoder modules
@@ -43,16 +46,21 @@ class QBN(object):
         self.hidden_decode = []
         for layer in range(len(self.size_of_layers) - 1):
             h = self.transfer(
-                tf.add(tf.matmul(h, self.weights['recon'][layer]['w']),
-                       self.weights['recon'][layer]['b']))
+                tf.add(tf.matmul(h, self.weights['decode'][layer]['w']),
+                       self.weights['decode'][layer]['b']))
             self.hidden_decode.append(h)
         self.decoding = self.hidden_decode[-1]
 
         # MSE Reconstruction Loss / loss
-        self.reconstruction_diff = tf.subtract(self.decoding, self.x)
-        self.loss = 0.5 * tf.reduce_sum(tf.pow(self.reconstruction_diff, 2.0))
-        self.loss_summ = tf.summary.scalar('MSE Loss', self.loss)
-        self.optimizer = optimizer.minimize(self.loss)
+        self.train_loss = loss_func(self.x, self.decoding)
+        self.test_loss = loss_func(self.x_test, self.decoding)
+
+        # merge all summaries :)
+        self.train_loss_summ = tf.summary.scalar('Train Loss', self.train_loss)
+        self.test_loss_summ = tf.summary.scalar('Test Loss', self.test_loss)
+        self.merged_summ = tf.compat.v1.summary.merge_all()
+
+        self.optimizer = optimizer.minimize(self.train_loss)
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
@@ -83,25 +91,30 @@ class QBN(object):
             recon_weights.append({'w': w, 'b': b})
 
         all_weights['encode'] = encoder_weights
-        all_weights['recon'] = recon_weights
+        all_weights['decode'] = recon_weights
 
         return all_weights
 
-    def partial_fit(self, X):
+    def partial_fit(self, train_data, test_data):
         """
         does a batch of gradient descent
 
-        :param      X:    training data batch to fit
+        :param      train_data:  The training data
+        :param      test_data:   The test data to evaluate the model on
 
-        :returns:   the batch training loss scalar
+        :returns:   losses and summaries for tb writing
+                    (train_loss, test_loss, merged_summaries)
         """
 
-        (loss, opt,
-         loss_summary) = self.sess.run((self.loss, self.optimizer,
-                                        self.loss_summ),
-                                       feed_dict={self.x: X})
+        (train_loss, test_loss, opt,
+         merged_summaries) = self.sess.run([self.train_loss,
+                                            self.test_loss,
+                                            self.optimizer,
+                                            self.merged_summ],
+                                           feed_dict={self.x: train_data,
+                                                      self.x_test: test_data})
 
-        return loss
+        return train_loss, test_loss, merged_summaries
 
     def fit(self, X, training_epochs=400, batch_size=32, n_samples=None,
             verbose=False, display_step=1, log_dir='logs'):
@@ -124,7 +137,7 @@ class QBN(object):
 
         # for tensorboard logging of training
         if write_to_logs:
-            writer = tf.summary.FileWriter(log_dir)
+            writer = tf.compat.v1.summary.FileWriter(log_dir)
 
         # try to compute the number of samples if not given, but sometimes
         # len is not going to work.
@@ -133,29 +146,30 @@ class QBN(object):
 
         for epoch in range(training_epochs):
 
-            avg_loss = 0.
             total_batch = int(n_samples / batch_size)
 
             # Loop over all batches
             for i in range(total_batch):
 
                 batch_xs = self.get_random_block_from_data(X, batch_size)
+                batch_xs_test = self.get_random_block_from_data(X_test,
+                                                                batch_size)
 
                 # Fit training using batch data
-                loss, _, loss_summary = autoencoder.partial_fit(batch_xs)
+                (train_loss, test_loss,
+                 merged_summaries) = self.partial_fit(train_data=batch_xs,
+                                                      test_data=batch_xs_test)
 
-                # Compute average loss
-                avg_loss += loss / n_samples * batch_size
-
-                # update tensorboard logs with the loss from the most recent
-                # batch of data
-                if write_to_logs:
-                    writer.add_summary(loss_summary, i)
+            # update tensorboard logs with the loss from the most recent
+            # batch of data
+            if write_to_logs:
+                writer.add_summary(merged_summaries, epoch)
 
             # Display logs per epoch step
             if (epoch % display_step == 0) and verbose:
                 print("Epoch:", '%d,' % (epoch + 1),
-                      "loss:", "{:.9f}".format(avg_loss))
+                      "train_loss:", "{:.9f}".format(train_loss),
+                      "test_loss:", "{:.9f}".format(test_loss))
 
     def get_random_block_from_data(self, data, batch_size):
 
@@ -163,7 +177,7 @@ class QBN(object):
         return data[start_index:(start_index + batch_size)]
 
     def calc_total_loss(self, X):
-        return self.sess.run(self.loss, feed_dict={self.x: X})
+        return self.sess.run(self.train_loss, feed_dict={self.x: X})
 
     def transform(self, X):
         return self.sess.run(self.hidden_encode[-1], feed_dict={self.x: X})
@@ -171,7 +185,7 @@ class QBN(object):
     def generate(self, hidden=None):
         if hidden is None:
             hidden = np.random.normal(size=self.weights['encode'][-1]['b'])
-        return self.sess.run(self.reconstruction,
+        return self.sess.run(self.decoding,
                              feed_dict={self.hidden_encode[-1]: hidden})
 
     def encode(self, X):
