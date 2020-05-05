@@ -96,8 +96,10 @@ class QBN(object):
         :returns:   the batch training loss scalar
         """
 
-        loss, opt = self.sess.run((self.loss, self.optimizer),
-                                  feed_dict={self.x: X})
+        (loss, opt,
+         loss_summary) = self.sess.run((self.loss, self.optimizer,
+                                        self.loss_summ),
+                                       feed_dict={self.x: X})
 
         return loss
 
@@ -140,7 +142,7 @@ class QBN(object):
                 batch_xs = self.get_random_block_from_data(X, batch_size)
 
                 # Fit training using batch data
-                loss = autoencoder.partial_fit(batch_xs)
+                loss, _, loss_summary = autoencoder.partial_fit(batch_xs)
 
                 # Compute average loss
                 avg_loss += loss / n_samples * batch_size
@@ -148,7 +150,7 @@ class QBN(object):
                 # update tensorboard logs with the loss from the most recent
                 # batch of data
                 if write_to_logs:
-                    writer.add_summary(self.sess.run(self.loss_summ), i)
+                    writer.add_summary(loss_summary, i)
 
             # Display logs per epoch step
             if (epoch % display_step == 0) and verbose:
