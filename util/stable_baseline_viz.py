@@ -33,7 +33,7 @@ def show_videos(video_path='', prefix=''):
 
 # We will record a video using the
 # stable_baselines VecVideoRecorder wrapper
-def record_video(model, env_id=None, eval_env=None,
+def record_video(model, num_training_envs, env_id=None, eval_env=None,
                  max_video_length=500, video_prefix='',
                  video_folder='videos/', break_early=False,
                  is_recurrent=False):
@@ -59,10 +59,16 @@ def record_video(model, env_id=None, eval_env=None,
     if is_recurrent:
         state = None
 
+    # When using VecEnv, done is a vector
+    doneVec = [False for _ in range(num_training_envs)]
+
     obs = eval_env.reset()
 
     for _ in range(max_video_length):
-        action, state = model.predict(obs, state=state)
+
+        # We need to pass the previous state and a mask for recurrent policies
+        # to reset lstm state when a new episode begin
+        action, state = model.predict(obs, state=state, mask=doneVec)
 
         # only allow recurrent models to continually update their state
         if not is_recurrent:
@@ -70,11 +76,7 @@ def record_video(model, env_id=None, eval_env=None,
 
         obs, _, done, _ = eval_env.step(action)
 
-        # if len(done) > 1:
-        #     if done.all() and break_early:
-        #         break
-        # if done and break_early:
-        #     break
+        doneVec[0] = done
 
     # Close the video recorder
     eval_env.close()
