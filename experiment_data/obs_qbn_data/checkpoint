@@ -1,0 +1,2 @@
+model_checkpoint_path: "obs_qbn_ppo2_PongNoFrameskip-v4_model.ckpt"
+all_model_checkpoint_paths: "obs_qbn_ppo2_PongNoFrameskip-v4_model.ckpt"

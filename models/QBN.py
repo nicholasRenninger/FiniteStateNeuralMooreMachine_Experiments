@@ -57,25 +57,30 @@ class QBN(object):
                  optimizer=tf.train.AdamOptimizer(),
                  gradient_clip_val=5.0,
                  loss_func=tf.compat.v1.losses.mean_squared_error,
-                 net_name='qbn', sess=None):
-
-        self.graph = tf.Graph()
-        if sess is None:
-            self.sess = tf.Session()
-        else:
-            self.sess = make_session(graph=self.graph)
+                 net_name='qbn'):
 
         self.net_name = net_name
+
+        self.hidd_activation = layers_activation_function
+        self.latent_activation = latent_activation_function
+        self.reconstruction_activation = decode_activation_function
+
+        self.loss_func = loss_func
+        self.optimizer = optimizer
+
+        self.layer_sizes = layer_sizes
+        self.input_dim = self.layer_sizes[0]
+
+        self.grad_clip_val = gradient_clip_val
+
+        self._setup_model()
+
+    def _setup_model(self):
+
+        self.graph = tf.Graph()
+        self.sess = make_session(graph=self.graph)
+
         with self.graph.as_default():
-
-            self.hidd_activation = layers_activation_function
-            self.latent_activation = latent_activation_function
-            self.reconstruction_activation = decode_activation_function
-
-            self.layer_sizes = layer_sizes
-            self.input_dim = self.layer_sizes[0]
-
-            self.grad_clip_val = gradient_clip_val
 
             network_weights = self._initialize_weights()
             self.weights = network_weights
@@ -95,12 +100,11 @@ class QBN(object):
             with tf.variable_scope('train', reuse=tf.AUTO_REUSE):
 
                 # MSE Reconstruction Loss / loss
-                self.train_loss = loss_func(self.x, self.decoding)
+                self.train_loss = self.loss_func(self.x, self.decoding)
                 self.train_loss_summ = tf.summary.scalar('Train_Loss',
                                                          self.train_loss)
 
                 # need to clip gradients for training stability
-                self.optimizer = optimizer
                 grad_info = self.optimizer.compute_gradients(self.train_loss)
                 self.gradients, self.variables = zip(*grad_info)
                 self.gradients, _ = tf.clip_by_global_norm(self.gradients,
@@ -109,6 +113,9 @@ class QBN(object):
                 self.optimize = self.optimizer.apply_gradients(clipped_grads)
 
             tf.global_variables_initializer().run(session=self.sess)
+
+            # for SAVING the model :)
+            self.saver = tf.train.Saver()
 
     def _initialize_weights(self):
         all_weights = dict()
@@ -234,7 +241,8 @@ class QBN(object):
 
     def fit(self, X, X_test,
             training_epochs=400, batch_size=32, n_samples=None,
-            verbose=False, display_step=1, log_dir='logs'):
+            verbose=False, display_step=1, log_dir='logs',
+            should_save=False, save_path='model.ckpt'):
         """
         Fully fits the QBN to the training data X
 
@@ -294,6 +302,18 @@ class QBN(object):
                     print("Epoch:", '%d,' % (epoch + 1),
                           "train_loss:", "{:.9f}".format(train_loss),
                           "test_loss:", "{:.9f}".format(test_loss))
+
+        with self.sess as sess:
+            self.saver.save(sess, save_path)
+
+    def load_model(self, save_path):
+
+        tf.reset_default_graph()
+
+        self._setup_model()
+
+        with self.sess as sess:
+            self.saver.restore(sess, save_path)
 
     def format_data(self, data):
         data_shape = data.shape
