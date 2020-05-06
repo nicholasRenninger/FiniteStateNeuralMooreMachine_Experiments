@@ -118,7 +118,6 @@ RUN pip install --user jupyterthemes \
 
 # configure jupyter notebook extensions
 RUN jupyter contrib nbextension install --user
-RUN jupyter nbextension enable latex_envs/latex_envs
 RUN jupyter nbextension enable autosavetime/main
 RUN jupyter nbextension enable collapsible_headings/main
 RUN jupyter nbextension enable livemdpreview/livemdpreview
@@ -133,6 +132,8 @@ RUN jupyter nbextension enable codefolding/edit
 RUN jupyter nbextension enable freeze/main
 RUN jupyter nbextension enable runtools/main
 RUN jupyter nbextension enable codemirror_mode_extensions/main
+RUN jupyter nbextension enable select_keymap/main
+RUN jupyter nbextension enable varInspector/main
 
 # configure jupyter notebook theme
 RUN jt -t onedork -fs 95 -altp -tfs 11 -nfs 115 -cellw 88% -T -f firacode
