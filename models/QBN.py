@@ -308,12 +308,10 @@ class QBN(object):
 
     def load_model(self, save_path):
 
-        tf.reset_default_graph()
+        # tf.reset_default_graph()
 
         self._setup_model()
-
-        with self.sess as sess:
-            self.saver.restore(sess, save_path)
+        self.saver.restore(self.sess, save_path)
 
     def format_data(self, data):
         data_shape = data.shape
@@ -333,7 +331,7 @@ class QBN(object):
 
     def decode(self, X):
         X = self.format_data(X)
-        return self.sess.run(self.decoding, feed_dict={self.x: X})
+        return self.sess.run(self.decoding, feed_dict={self.encoding: X})
 
     def getWeights(self):
         raise NotImplementedError

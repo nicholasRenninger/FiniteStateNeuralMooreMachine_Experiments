@@ -60,9 +60,9 @@ class CustomCNNLstmPolicy(RecurrentActorCriticPolicy):
                     for i, layer_size in enumerate(layers):
                         self._extracted_features = act_fun(linear(self._extracted_features, 'pi_fc' + str(i), n_hidden=layer_size,
                                                             init_scale=np.sqrt(2)))
-                input_sequence = batch_to_seq(self._extracted_features, self.n_env, n_steps)
+                self.input_sequence = batch_to_seq(self._extracted_features, self.n_env, n_steps)
                 masks = batch_to_seq(self.dones_ph, self.n_env, n_steps)
-                self.rnn_output, self.snew = lstm(input_sequence, masks, self.states_ph, 'lstm1', n_hidden=n_lstm,
+                self.rnn_output, self.snew = lstm(self.input_sequence, masks, self.states_ph, 'lstm1', n_hidden=n_lstm,
                                              layer_norm=layer_norm)
                 self.rnn_output = seq_to_batch(self.rnn_output)
                 value_fn = linear(self.rnn_output, 'vf', 1)
@@ -91,9 +91,9 @@ class CustomCNNLstmPolicy(RecurrentActorCriticPolicy):
                     elif layer == "lstm":
                         if lstm_layer_constructed:
                             raise ValueError("The net_arch parameter must only contain one occurrence of 'lstm'!")
-                        input_sequence = batch_to_seq(latent, self.n_env, n_steps)
+                        self.input_sequence = batch_to_seq(latent, self.n_env, n_steps)
                         masks = batch_to_seq(self.dones_ph, self.n_env, n_steps)
-                        rnn_output, self.snew = lstm(input_sequence, masks, self.states_ph, 'lstm1', n_hidden=n_lstm,
+                        rnn_output, self.snew = lstm(self.input_sequence, masks, self.states_ph, 'lstm1', n_hidden=n_lstm,
                                                      layer_norm=layer_norm)
                         latent = seq_to_batch(rnn_output)
                         lstm_layer_constructed = True
