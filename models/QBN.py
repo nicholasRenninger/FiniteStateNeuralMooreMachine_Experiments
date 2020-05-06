@@ -4,23 +4,57 @@ import tensorflow as tf
 if __name__ == "__main__":
     import sklearn.preprocessing as prep
     from tensorflow.examples.tutorials.mnist import input_data
+    from activations import n_ary_activation
+else:
+    from .activations import n_ary_activation
 
 
 # As a QBN is essentially an applied autoencoder, this base class was taken and
-# modified from the tf 1 model examples at :
+# HEAVILY modified from the tf 1 model examples at:
 #
 # https://github.com/tensorflow/models/tree/master/research/autoencoder
+# https://github.com/koulanurag/mmn/blob/65135da36dc8f8bfad05797f9d077c22adde0384/main_atari.py#L91
 
 class QBN(object):
+    """
+    A quantized bottleneck network, which is really a quntizing
+    autoencoder in disguise™
 
-    def __init__(self, size_of_layers, transfer_function=tf.nn.softplus,
+    This QBN reduces the dimensionality and quantizes its input features into a
+    latent hidden state where each neuron has a discrete value, in this case
+    from the ternary (three-values: -1, 0, 1) set.  Thus the combination of the
+    latent states's values encode a ternary discrete value.
+
+    :param      layer_sizes:                 the sizes of all network layers
+                                             e.g. layer_sizes = [100, 80, 50]
+                                             means the layers of the model are:
+                                             * encoder_1 = (100, 80)
+                                             * encoder_2 = (80, 50) <- latent
+                                             * decoder_1 = (50, 80)
+                                             * decoder_2 = (80, 100)
+    :param      layers_activation_function:  All (encoder & decoder)
+                                             hidden layers' activation
+                                             function.
+    :param      latent_activation_function:  The latent layer's activation
+                                             function. This should be quantized
+                                             so that the latent state is
+                                             quantized.
+    :param      optimizer:                   The optimizer
+    :param      loss_func:                   The loss function for training
+    :param      log_dir:                     The tensorboard logging directory
+    """
+
+    def __init__(self, layer_sizes,
+                 layers_activation_function=tf.nn.tanh,
+                 latent_activation_function=n_ary_activation,
                  optimizer=tf.train.AdamOptimizer(),
                  loss_func=tf.compat.v1.losses.mean_squared_error,
                  log_dir='logs'):
 
-        self.size_of_layers = size_of_layers
-        self.transfer = transfer_function
-        self.input_dim = self.size_of_layers[0]
+        self.layer_sizes = layer_sizes
+        self.hidd_activation = layers_activation_function
+        self.latent_activation = latent_activation_function
+        self.input_dim = self.layer_sizes[0]
 
         network_weights = self._initialize_weights()
         self.weights = network_weights
@@ -33,23 +67,32 @@ class QBN(object):
         h = self.x
 
         # build encoder module
-        self.hidden_encode = []
+        self.encode_layer_tensors = []
+        latent_layer_idx = len(self.layer_sizes) - 2
+        for layer in range(len(self.layer_sizes) - 1):
 
-        for layer in range(len(self.size_of_layers) - 1):
-            h = self.transfer(
-                tf.add(tf.matmul(h, self.weights['encode'][layer]['w']),
-                       self.weights['encode'][layer]['b']))
-            self.hidden_encode.append(h)
-        self.encoding = self.hidden_encode[-1]
+            # latent layer needs a quantized activation for this to be
+            # quantized
+            if layer == latent_layer_idx:
+                activ = self.latent_activation
+            else:
+                activ = self.hidd_activation
+
+            h = activ(tf.add(tf.matmul(h, self.weights['encode'][layer]['w']),
+                             self.weights['encode'][layer]['b']))
+            self.encode_layer_tensors.append(h)
+
+        self.encoding = self.encode_layer_tensors[-1]
 
         # build decoder module
-        self.hidden_decode = []
-        for layer in range(len(self.size_of_layers) - 1):
-            h = self.transfer(
+        self.decode_layer_tensors = []
+        for layer in range(len(self.layer_sizes) - 1):
+            h = self.hidd_activation(
                 tf.add(tf.matmul(h, self.weights['decode'][layer]['w']),
                        self.weights['decode'][layer]['b']))
-            self.hidden_decode.append(h)
-        self.decoding = self.hidden_decode[-1]
+            self.decode_layer_tensors.append(h)
+
+        self.decoding = self.decode_layer_tensors[-1]
 
         # MSE Reconstruction Loss / loss
         self.train_loss = loss_func(self.x, self.decoding)
@@ -72,22 +115,22 @@ class QBN(object):
 
         # Encoding network weights
         encoder_weights = []
-        for layer in range(len(self.size_of_layers) - 1):
-            w = tf.Variable(initializer((self.size_of_layers[layer],
-                                         self.size_of_layers[layer + 1]),
+        for layer in range(len(self.layer_sizes) - 1):
+            w = tf.Variable(initializer((self.layer_sizes[layer],
+                                         self.layer_sizes[layer + 1]),
                                         dtype=tf.float32))
             b = tf.Variable(
-                tf.zeros([self.size_of_layers[layer + 1]], dtype=tf.float32))
+                tf.zeros([self.layer_sizes[layer + 1]], dtype=tf.float32))
             encoder_weights.append({'w': w, 'b': b})
 
         # decoder network weights
         recon_weights = []
-        for layer in range(len(self.size_of_layers) - 1, 0, -1):
-            w = tf.Variable(initializer((self.size_of_layers[layer],
-                                         self.size_of_layers[layer - 1]),
+        for layer in range(len(self.layer_sizes) - 1, 0, -1):
+            w = tf.Variable(initializer((self.layer_sizes[layer],
+                                         self.layer_sizes[layer - 1]),
                                         dtype=tf.float32))
             b = tf.Variable(
-                tf.zeros([self.size_of_layers[layer - 1]], dtype=tf.float32))
+                tf.zeros([self.layer_sizes[layer - 1]], dtype=tf.float32))
             recon_weights.append({'w': w, 'b': b})
 
         all_weights['encode'] = encoder_weights
@@ -116,12 +159,14 @@ class QBN(object):
 
         return train_loss, test_loss, merged_summaries
 
-    def fit(self, X, training_epochs=400, batch_size=32, n_samples=None,
+    def fit(self, X, X_test,
+            training_epochs=400, batch_size=32, n_samples=None,
             verbose=False, display_step=1, log_dir='logs'):
         """
         Fully fits the QBN to the training data X
 
         :param      X:                the training data
+        :param      X_test:           the test data to evaluate the network on
         :param      training_epochs:  The training epochs
         :param      batch_size:       The training batch size
         :param      n_samples:        The number of samples in X
@@ -176,22 +221,24 @@ class QBN(object):
         start_index = np.random.randint(0, len(data) - batch_size)
         return data[start_index:(start_index + batch_size)]
 
+    def format_data(self, data):
+        data_shape = data.shape
+        if len(data_shape) > 1:
+            return data
+        else:
+            reshaped_data = data.reshape((-1, self.input_dim))
+            return reshaped_data
+
     def calc_total_loss(self, X):
+        X = self.format_data(X)
         return self.sess.run(self.train_loss, feed_dict={self.x: X})
 
-    def transform(self, X):
-        return self.sess.run(self.hidden_encode[-1], feed_dict={self.x: X})
-
-    def generate(self, hidden=None):
-        if hidden is None:
-            hidden = np.random.normal(size=self.weights['encode'][-1]['b'])
-        return self.sess.run(self.decoding,
-                             feed_dict={self.hidden_encode[-1]: hidden})
-
     def encode(self, X):
+        X = self.format_data(X)
         return self.sess.run(self.encoding, feed_dict={self.x: X})
 
     def decode(self, X):
+        X = self.format_data(X)
         return self.sess.run(self.decoding, feed_dict={self.x: X})
 
     def getWeights(self):
@@ -217,15 +264,24 @@ if __name__ == "__main__":
     X_train, X_test = standard_scale(mnist.train.images, mnist.test.images)
 
     n_samples = int(mnist.train.num_examples)
-    training_epochs = 20
+    training_epochs = 10
     batch_size = 128
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-    autoencoder = QBN(size_of_layers=[784, 200],
-                      transfer_function=tf.nn.softplus,
-                      optimizer=optimizer)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.0003)
+    quantized_autoencoder = QBN(layer_sizes=[784, 300, 200],
+                                layers_activation_function=tf.nn.softplus,
+                                optimizer=optimizer)
 
-    autoencoder.fit(X_train, training_epochs=training_epochs,
-                    batch_size=batch_size, n_samples=n_samples, verbose=True)
+    quantized_autoencoder.fit(X_train, X_test, training_epochs=training_epochs,
+                              batch_size=batch_size,
+                              n_samples=n_samples, verbose=True)
 
-    print("Total loss: " + str(autoencoder.calc_total_loss(X_test)))
+    # example usage
+    ex_data = X_train[0, :]
+    latent_quantized_representation = quantized_autoencoder.encode(ex_data)
+    reconstructed_data = quantized_autoencoder.decode(ex_data)
+    print(ex_data[0:10])
+    print(latent_quantized_representation.flatten()[0:10])
+    print(reconstructed_data.flatten()[0:10])
+
+    print("Total loss: " + str(quantized_autoencoder.calc_total_loss(X_test)))
