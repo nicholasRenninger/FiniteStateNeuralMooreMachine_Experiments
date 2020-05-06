@@ -44,17 +44,36 @@ class QBN(object):
     :param      log_dir:                     The tensorboard logging directory
     """
 
-    def __init__(self, layer_sizes,
+    def __init__(self,
+                 layer_sizes_by_input_scaling_factors=None,
+                 latent_size=None,
+                 layer_sizes=None,
                  layers_activation_function=tf.nn.tanh,
                  latent_activation_function=n_ary_activation,
                  optimizer=tf.train.AdamOptimizer(),
                  loss_func=tf.compat.v1.losses.mean_squared_error,
                  log_dir='logs'):
 
-        self.layer_sizes = layer_sizes
+        self.input_dim = self.layer_sizes[0]
+
+        has_layers = layer_sizes_by_input_scaling_factors is not None
+        has_latent = latent_size is not None
+        proper_net_spec = (has_latent and has_layers)
+        if layer_sizes is not None:
+            self.layer_sizes = layer_sizes
+        elif proper_net_spec:
+            self.layer_sizes = [scaling * self.input_dim for scaling in
+                                layer_sizes_by_input_scaling_factors]
+            self.layer_sizes.append(latent_size)
+        else:
+            msg = 'must supply a non-None value for both ' + \
+                  'layer_sizes_by_input_scaling_factors ' + \
+                  f'({layer_sizes_by_input_scaling_factors}) and ' + \
+                  f'latent_size ({latent_size})'
+            ValueError(msg)
+
         self.hidd_activation = layers_activation_function
         self.latent_activation = latent_activation_function
-        self.input_dim = self.layer_sizes[0]
 
         network_weights = self._initialize_weights()
         self.weights = network_weights
