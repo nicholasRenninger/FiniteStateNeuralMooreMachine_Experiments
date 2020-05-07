@@ -1,7 +1,7 @@
 # NeuralMooreMachine_Experiments
 A project experimenting with Extracting Moore Machines from Recurrent Sequence Models, based heavily on reproducing and extending the experiments in the paper ["Learning Finite State Representations of Recurrent Policy Networks"](https://arxiv.org/abs/1811.12530) ([repo](https://github.com/koulanurag/mmn)).
 
-Currently, the container-based environment has been tested to work on both Ubuntu (GPU / CPU) and macOS (CPU-only) hosts. For GPU support, onle
+Currently, the container-based environment has been tested to work on both Ubuntu (GPU / CPU) and macOS (CPU-only) hosts. For GPU support, you will need a compiant NVIDIA GPU. See the [Installation Section](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#installation) for more details.
 
 **Table of Contents**
 * [About](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#about)
