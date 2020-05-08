@@ -5,7 +5,7 @@ Currently, the container-based environment has been tested to work on both Ubunt
 
 **Table of Contents**
 * [About](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#about)
-* Results
+* [Results](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#methodology)
 * [Methodology](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#methodology)
 * [Container Usage](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#container-usage)
 * [Installation](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/README.md#installation)
@@ -21,7 +21,30 @@ This project is based on [stable-baselines](https://stable-baselines.readthedocs
 
 ## Results
 
-Not yet :(
+See [my paper](https://github.com/nicholasRenninger/CSCI_5922_Final_Project_Report/blob/511a71f2eea62637146e52432be817ac258fdb47/CSCI_5922_Final_Project_Report.pdf) or [the notebook](https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/MMNN_testing.ipynb) for more of the training results and hyperparameter choices.
+
+
+### Final Policies
+
+#### CNN-LSTM Policy
+This agent observes pixels from the game and outputs an action at each timestep. The agents transforms pixels to LSTM hidden state using the [Original Atari CNN Architecture](https://www.nature.com/articles/nature14236) and then the LSTM outputs its updated hidden state to the actor-critic architecture, where the action distribution and value function are both estimated by the final network layers. These networks are trained using the [PPO2](https://stable-baselines.readthedocs.io/en/master/modules/ppo2.html) actor-crtic RL algorithm, chosen here because of its performance, ease of hyperparameter tuning, and easy parallelizability. Below is a gif of the trained CNN-LSTM agent in a single pong environment:
+
+<img src="https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/media/basepolicy_ppo2_PongNoFrameskip-v4_single-step-0-to-step-1000.gif">
+
+#### Moore Machine Network (MMN) Policy
+This agent again observes pixels from the game and outputs an action at each timestep. However, there are now two quantized bottleneck networks (QBNs) placed after the CNN feature extractor and after the LSTM state output. These QBNs are quantized autoencoders, where the latent state of each autoencoder network has neurons that are quantized to have activated values of either -1, 0, or 1. This means that the entire policy network - called a moore machine network (MMN) - is now technically a finite state machine, specifically a [moore machine](https://en.wikipedia.org/wiki/Moore_machine), that uses the CNN as its discrete observation function and the LSTM as the resultant state transition function. The two QBNs are each trained separately until their reconstruction loss is quite low, and then they are inserted into the original CNN-LSTM network as described above to form the final MMN. Below is a gif of the trained MMN agent in a single pong environment:
+
+<img src="https://github.com/nicholasRenninger/NeuralMooreMachine_Experiments/blob/master/media/mmn_ppo2_PongNoFrameskip-v4_single-step-0-to-step-1000.gif">
+
+### Evaluation
+
+Below is a table showing the mean non-discounted reward for each agent over 10 monte-carlo rollouts:
+
+|     Original CNN-LSTM Agent     |    MMN Agent   |
+|:-------------------------------:|:--------------:|
+|            20.3 ± 0.2.          |  18.90 ± 1.14  |
+
+Thus, the MMN seems to have pretty comparable performance to the original policy, despite it now being represented by a finite state machine. However, looking at the agents, we can see that the MMN certainly looks to be less "smooth" overall, something we expect given the compressed, finite observation and state space of the MMN policy. No fine-tuning of the MMN policy network was implemented, so the MMN could certainly be improved by some more training in the environment.
 
 
 ## Methodology
